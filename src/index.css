@@ -1,0 +1,106 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap');
+
+:root {
+  /* Restaurant Brand Colors - Warm & Inviting */
+  --primary: #D97638;
+  /* Warm orange/terracotta - grilled food color */
+  --primary-foreground: #FFFFFF;
+  --secondary: #3E2A1F;
+  /* Deep brown - rich wood tone */
+  --secondary-foreground: #F5E6D3;
+  --background: #1C1410;
+  /* Dark chocolate brown */
+  --foreground: #F5E6D3;
+  /* Warm cream */
+  --muted: #2D2118;
+  /* Medium brown */
+  --muted-foreground: #B8A491;
+  /* Tan/beige */
+  --card: #261B14;
+  /* Card brown */
+  --card-foreground: #F5E6D3;
+  --border: #3E2A1F;
+  --destructive: #C1440E;
+  /* Burnt orange for errors */
+  --radius: 21px;
+
+  /* Role Colors - Food-themed */
+  --role-waiter: #E8A05D;
+  /* Golden orange */
+  --role-cook: #8B4513;
+  /* Saddle brown */
+  --role-dish: #CD853F;
+  /* Peru/tan */
+
+  --font-body: 'Open Sans', sans-serif;
+  --font-heading: 'Playfair Display', serif;
+
+  --spacing-base: 6px;
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --glass-bg: rgba(38, 27, 20, 0.85);
+  --glass-border: rgba(217, 118, 56, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: calc(var(--spacing-base) * 4);
+}
+
+.app-container {
+  width: 100%;
+  max-width: 448px;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing-base) * 4);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: calc(var(--spacing-base) * 4);
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  border-radius: var(--radius);
+  border: none;
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
