@@ -13,7 +13,10 @@ To enable multi-device access and persistent storage across devices, this applic
 ## 2. Get API Keys
 
 1. Once the project is created, go to **Settings** -> **API**.
-2. Find the `Project URL` and `anon public` key.
+2. Find the **Project URL**.
+3. Find the **Publishable key** (or `anon` public key).
+   - *Note: You may see "Publishable key", "Secret key", and "Legacy anon key". Use the **Publishable key** (starts with `sb_publishable_`) or the **Legacy anon key**.*
+   - **WARNING:** Never use the "Secret key" or "service_role" key in this application. These keys bypass security rules and should not be exposed in a client-side app.
 
 ## 3. Create the Database Table
 
@@ -31,7 +34,7 @@ CREATE TABLE app_storage (
 -- Enable Row Level Security (RLS)
 ALTER TABLE app_storage ENABLE ROW LEVEL SECURITY;
 
--- Create a policy to allow anyone with the anon key to read/write
+-- Create a policy to allow anyone with the anon/publishable key to read/write
 -- Note: In a production app with users, you'd want stricter policies.
 -- For this simple shared app (protected by a client-side PIN), this allows the app to function.
 CREATE POLICY "Allow anonymous access" ON app_storage
@@ -49,7 +52,7 @@ CREATE POLICY "Allow anonymous access" ON app_storage
 
 ```
 VITE_SUPABASE_URL=your_project_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_SUPABASE_ANON_KEY=your_publishable_key_or_anon_key
 ```
 
 3. Rebuild and deploy your app.
