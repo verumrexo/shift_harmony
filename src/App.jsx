@@ -6,7 +6,8 @@ import AvailabilityTab from './components/AvailabilityTab';
 import ScheduleTab from './components/ScheduleTab';
 import HistoryTab from './components/HistoryTab';
 import { generateSchedule } from './utils/scheduler';
-import { getScheduleState, archiveSchedule, getScheduleHistory, shouldArchiveCurrentSchedule, markArchiveComplete } from './utils/scheduleState';
+import { getScheduleState, archiveSchedule, shouldArchiveCurrentSchedule, getTodayDateString } from './utils/scheduleState';
+import { storage } from './services/storage';
 
 // Staff constants
 const STAFF = [
@@ -22,39 +23,72 @@ function App() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('availability');
   const [scheduleState, setScheduleState] = useState(getScheduleState());
-  const [history, setHistory] = useState(getScheduleHistory());
 
   // Data State
-  const [availability, setAvailability] = useState(() => {
-    const saved = localStorage.getItem('sh_availability');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [availability, setAvailability] = useState({});
+  const [scheduleData, setScheduleData] = useState({ schedule: [], stats: {} });
+  const [history, setHistory] = useState([]);
+  const [lastArchiveCheck, setLastArchiveCheck] = useState('');
 
-  const [scheduleData, setScheduleData] = useState(() => {
-    const saved = localStorage.getItem('sh_schedule');
-    return saved ? JSON.parse(saved) : { schedule: [], stats: {} };
-  });
+  // Initialize data from storage
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const [loadedAvailability, loadedSchedule, loadedHistory, loadedArchiveCheck] = await Promise.all([
+          storage.get('sh_availability', {}),
+          storage.get('sh_schedule', { schedule: [], stats: {} }),
+          storage.get('sh_history', []),
+          storage.get('sh_last_archive_check', '')
+        ]);
+
+        setAvailability(loadedAvailability);
+        setScheduleData(loadedSchedule);
+        setHistory(loadedHistory);
+        setLastArchiveCheck(loadedArchiveCheck);
+      } catch (err) {
+        console.error("Failed to load data", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
 
   // Check for archiving and update schedule state periodically
   useEffect(() => {
+    // If we're still loading, don't run this logic yet
+    if (isLoading) return;
+
     const checkScheduleState = () => {
       const newState = getScheduleState();
       setScheduleState(newState);
 
       // Auto-archive on the 1st of the month
-      if (shouldArchiveCurrentSchedule() && scheduleData.schedule.length > 0) {
+      if (shouldArchiveCurrentSchedule(lastArchiveCheck) && scheduleData.schedule.length > 0) {
         const prevMonth = newState.currentMonth === 0 ? 11 : newState.currentMonth - 1;
         const prevYear = newState.currentMonth === 0 ? newState.currentYear - 1 : newState.currentYear;
 
-        archiveSchedule(scheduleData.schedule, scheduleData.stats, prevMonth, prevYear);
-        setHistory(getScheduleHistory());
-        markArchiveComplete();
+        // Perform archive logic
+        const newHistory = archiveSchedule(history, scheduleData.schedule, scheduleData.stats, prevMonth, prevYear);
 
-        // Clear current schedule and availability for new month
+        // Update state
+        setHistory(newHistory);
         setScheduleData({ schedule: [], stats: {} });
         setAvailability({});
-        localStorage.removeItem('sh_schedule');
-        localStorage.removeItem('sh_availability');
+
+        const today = getTodayDateString();
+        setLastArchiveCheck(today);
+
+        // Save everything to storage
+        Promise.all([
+            storage.set('sh_history', newHistory),
+            storage.set('sh_schedule', { schedule: [], stats: {} }),
+            storage.set('sh_availability', {}),
+            storage.set('sh_last_archive_check', today)
+        ]);
       }
     };
 
@@ -62,7 +96,7 @@ function App() {
     const interval = setInterval(checkScheduleState, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, [scheduleData]);
+  }, [isLoading, scheduleData, history, lastArchiveCheck]);
 
   const handlePinSubmit = (digit) => {
     if (pin.length < 4) {
@@ -82,18 +116,19 @@ function App() {
     }
   };
 
-  const handleSaveAvailability = (newAvailability) => {
+  const handleSaveAvailability = async (newAvailability) => {
     if (scheduleState.isLocked) {
       return; // Prevent changes when locked
     }
 
     setAvailability(newAvailability);
-    localStorage.setItem('sh_availability', JSON.stringify(newAvailability));
+    await storage.set('sh_availability', newAvailability);
+
     // Regenerate schedule automatically when preferences change
     handleGenerateSchedule(newAvailability);
   };
 
-  const handleGenerateSchedule = (currentAvailability = availability) => {
+  const handleGenerateSchedule = async (currentAvailability = availability) => {
     if (scheduleState.isLocked) {
       return; // Prevent regeneration when locked
     }
@@ -105,7 +140,7 @@ function App() {
 
     const result = generateSchedule(targetYear, adjustedMonth, STAFF, currentAvailability);
     setScheduleData(result);
-    localStorage.setItem('sh_schedule', JSON.stringify(result));
+    await storage.set('sh_schedule', result);
   };
 
   if (!isAuthenticated) {
@@ -158,6 +193,14 @@ function App() {
         </div>
       </div>
     );
+  }
+
+  if (isLoading) {
+      return (
+          <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+              <div style={{ color: 'var(--foreground)' }}>Loading...</div>
+          </div>
+      );
   }
 
   return (

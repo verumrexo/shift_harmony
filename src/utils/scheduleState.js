@@ -31,8 +31,19 @@ export const getScheduleState = () => {
     };
 };
 
-export const archiveSchedule = (schedule, stats, month, year) => {
-    const history = JSON.parse(localStorage.getItem('sh_history') || '[]');
+/**
+ * Creates a new history entry and returns the updated history array.
+ * Pure function - does not save to storage.
+ *
+ * @param {Array} currentHistory - The current history array
+ * @param {Array} schedule - The schedule to archive
+ * @param {Object} stats - Stats to archive
+ * @param {number} month - Month of the schedule
+ * @param {number} year - Year of the schedule
+ * @returns {Array} Updated history array
+ */
+export const archiveSchedule = (currentHistory, schedule, stats, month, year) => {
+    const history = [...(currentHistory || [])];
 
     const archiveEntry = {
         id: `${year}-${String(month + 1).padStart(2, '0')}`,
@@ -49,24 +60,23 @@ export const archiveSchedule = (schedule, stats, month, year) => {
     // Keep only last 12 months
     const trimmedHistory = history.slice(0, 12);
 
-    localStorage.setItem('sh_history', JSON.stringify(trimmedHistory));
-
     return trimmedHistory;
 };
 
-export const getScheduleHistory = () => {
-    return JSON.parse(localStorage.getItem('sh_history') || '[]');
-};
-
-export const shouldArchiveCurrentSchedule = () => {
+/**
+ * Checks if archiving should happen based on date and last check.
+ *
+ * @param {string} lastArchiveCheckDate - Date string YYYY-MM-DD
+ * @returns {boolean}
+ */
+export const shouldArchiveCurrentSchedule = (lastArchiveCheckDate) => {
     const now = new Date();
     const currentDay = now.getDate();
-    const lastArchiveCheck = localStorage.getItem('sh_last_archive_check');
 
     // On the 1st of the month, if we haven't archived yet
     if (currentDay === 1) {
         const today = now.toISOString().split('T')[0];
-        if (lastArchiveCheck !== today) {
+        if (lastArchiveCheckDate !== today) {
             return true;
         }
     }
@@ -74,7 +84,6 @@ export const shouldArchiveCurrentSchedule = () => {
     return false;
 };
 
-export const markArchiveComplete = () => {
-    const today = new Date().toISOString().split('T')[0];
-    localStorage.setItem('sh_last_archive_check', today);
+export const getTodayDateString = () => {
+    return new Date().toISOString().split('T')[0];
 };
